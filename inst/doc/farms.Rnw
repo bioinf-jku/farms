@@ -1,0 +1,242 @@
+\documentclass[article]{bioinf}
+\usepackage{amsmath,amssymb}
+\usepackage{bm}
+\usepackage{natbib}
+\usepackage{url}
+\usepackage{rotating}
+ \usepackage{farms_defs}
+ 
+ \usepackage{hyperref}
+
+\hypersetup{colorlinks=false,
+   pdfborder=0 0 0,
+   pdftitle={FARMS: Factor Analysis for Robust Microarray Summarization - Manual for the R package},
+   pdfauthor={Djork-Arn\'e Clevert}}
+ 
+ 
+% \setlength{\parskip}{0.7ex plus0.1ex minus0.1ex} 
+% \setlength{\parindent}{0em} 
+ 
+ \SweaveOpts{engine=R} 
+ %\VignetteIndexEntry{Using farms} 
+ %\VignetteKeywords{farms, qFarms, lFarms} 
+ %\VignetteDepends{farms, affy}
+ %\VignettePackage{farms} 
+ 
+ 
+% \newcommand{\scscst}{\scriptscriptstyle}
+%\newcommand{\scst}{\scriptstyle}
+ %\newcommand{\Rfunction}[1]{{\texttt{#1}}}
+%\newcommand{\Robject}[1]{{\texttt{#1}}}
+%\newcommand{\Rpackage}[1]{{\textit{#1}}}
+
+\title{Using FARMS for summarization  \\ Using I/NI-calls for gene filtering}
+\author{Djork-Arn\'e Clevert} 
+\affiliation{Institute of Bioinformatics, Johannes Kepler University
+Linz\\Altenberger Str. 69, 4040 Linz, Austria\\
+\email{okko@clevert.de}}
+
+\usepackage[noae]{Sweave}
+
+
+\begin{document}
+
+<<echo=FALSE,results=hide>>=
+options(width=75)
+set.seed(0)
+library(farms)
+library(utils)
+farmsVer<-packageDescription("farms")$Version
+@
+
+\newcommand{\farmsVer}{\Sexpr{farmsVer}}
+\manualtitlepage[Version \farmsVer, \today]
+
+\newlength{\auxparskip}
+\setlength{\auxparskip}{\parskip}
+\setlength{\parskip}{0pt}
+\tableofcontents
+\clearpage
+\setlength{\parskip}{\auxparskip}
+
+
+
+\section{Introduction}
+The \Rpackage{farms} package provides a new summarization algorithm called 
+FARMS - Factor Analysis for Robust Microarray Summarization and a novel
+unsupervised feature selection criterion called I/NI-calls. 
+
+\section{FARMS}
+
+The summarization method is based on a factor analysis model for which 
+a Bayesian Maximum a Posteriori method optimizes the model parameters 
+under the assumption of Gaussian measurement noise \cite{farms:06}.
+Thereafter, the RNA concentration is estimated from the model. 
+\Rpackage{farms} does not use background correction and uses
+either quantile normalization \cite{Bolstad:03} or cyclic loess \cite{Yang:02,Dudoit:02}. 
+Neverthess any other \Rpackage{affy} preprocessing method can be applied as well. 
+\Rpackage{farms} uses quantile normalization as default normalization procedure 
+because it is computational efficient. It does not apply
+PM corrections and uses PMs only. 
+We set the hyperparameters of the prior distribution by default to $\mathbf{weigth \ = \ 0.5}$, $\mathbf{mu  \ = \ 0}$. 
+We further set the default values for the maximal EM-iterations to $\mathbf{cyc  \ = \ 100}$ and the 
+termination criteriea to $\mathbf{tol  \ = \ 0.00001}$, which express that the iteration will stop if  
+the change of $\mathbf{var(z|x)}$ after the update step is smaller than that tolerance value.
+If probes of a probe set are governed
+by a common latent variable, then we associate 
+this variable with the mRNA concentration and its
+variation with the mRNA variation, i.e. with the signal.
+Intuitively speaking, if probes of a probe set
+change synchronously across the arrays then 
+this effect is very unlikely produced by noise and one
+should assume they are driven by a signal.
+But if no common variable exists, the covariance structure can 
+solely explain by the noise variance and implies that  
+factor loadings are zero. In this case the expression values will be constant. 
+Some post-processing methods e.g. t-tests face problems with constant
+ results, therefore we introduced a 
+boolean parameter called $\mathbf{robust}$, which prevent results
+ with zero variance. This parameter is by default set to 
+TRUE. \textbf{Nevertheless, we highly recommend to filter out nonrelevant
+ probe sets by applying I/NI-calls, as described in section \ref{sec:INI}.}
+For the sake of convenience \Rpackage{farms} package provides three wrapper function for 
+ \Rpackage{affy}-\verb+ expresso+:      
+
+\begin{itemize}
+\item  \verb+qFarms+ is a wrapper function to \verb+expresso+ and uses no background correction and quantile normalization as default normalization procedure.
+\item   \verb+lFarms+ performs like  \verb+qFarms+, but uses loess normalization as default normalization procedure.
+\item The function \verb+expFarms+  is a transparent wrapper to \verb+expresso+ and permits further preprocessing options.  
+\end{itemize}
+
+
+{\bf Note:} If you use this package please cite \cite{farms:06} and \cite{INI-Calls:07}. This package is 
+only free for non-commercial users. Non-academic users \textbf{MUST} have a
+valid license.
+
+\subsection{Getting Started}
+\label{sec:start}
+
+As usual, it is necessary to load the package.
+
+<<>>=
+library(farms)
+library(affydata)
+@
+
+In the following, we use the \verb+affybatch.example+ data set as it
+is provided by the \Rpackage{affy}  package to illustrate how to compute  
+expression measures with \Rpackage{farms}. 
+
+\begin{Sinput}
+> data(Dilution)
+> eset <- qFarms(Dilution)
+\end{Sinput}
+
+
+This will store expression values, in the object \Robject{eset}, as an
+object of class \Robject{exprSet} (see the \Rpackage{Biobase}
+package). 
+
+
+\begin{Sinput}
+> data(Dilution)
+> eset <- expFarms(Dilution , bgcorrect.method = "rma", pmcorrect.method = "pmonly", 
+     normalize.method = "constant")
+\end{Sinput}
+
+
+The available preprocessing options can be queried by using
+\verb+normalize.AffyBatch.methods+, \verb+pmcorrect.methods+ or  \verb+bgcorrect.methods+.\\
+
+
+Standard FARMS assumes Gaussian factor distribution that is
+a Gaussian distribution of the mRNA concentration across the samples. 
+This assumption is suited well suited for most experiments. 
+However, under some condition other, e.g. compounds studies, or very unbalanced data sets, 
+where differentially expressed gene are only expected in few individuals other assumptions 
+seem to be more adequate.
+Such rare events are hard to detect with the original FARMS as they would be
+interpreted as noise.
+An appropriate model would be a sparse distribution of the factor,
+that is the factor takes for most cases its default value and
+deviates only in few cases considerably from this value.
+Therefore we additionally  propose a factor analysis model with a Laplacian
+prior which leads to a sparse factor distribution.
+But now the likelihood is analytically intractable due to the non-Gaussian 
+form of the prior. To tackle this problem, we implemented an algorithm that
+applies a variational expectation maximization algorithm which
+optimizes a lower bound on the likelihood by representing 
+the prior as the maximum of a Gaussian function family. 
+The following example shows how to switch from the Gaussian to the Laplacian prior:
+
+\begin{Sinput}
+> data(Dilution)
+> eset <- qFarms(Dilution, laplacian=TRUE)
+\end{Sinput} 
+
+
+
+\section{I/NI calls}
+\label{sec:INI}
+In this section, we show how to apply the I/NI-calls to a data set. 
+Informative/ non-informative (I/NI) calls is an objective feature filtering technique
+for Affymetrix GeneChips. It uses the multiple probes measuring the same target mRNA as 
+repeated measures to quantify the signal-to-noise ratio of that specific probe set. 
+By incorporating probe level information to assess the noisy nature of probe sets, 
+I/NI calls provide a highly powerful and objective tool for gene filtering. I/NI calls 
+consequently offers a key solution to the main problem in the analysis of high-dimensional 
+microarray data, being multiple testing and overfitting. I/NI calls can be used in 
+combination with summarization techniques like FARMS, but also with any other 
+summarization technique like MAS5 or (GC)RMA.
+
+\subsection{Original I/NI call}
+
+The following example shows how this summarization method can be
+used as a filtering tool, based on informative / non-informative calls. 
+
+
+<<>>=
+data(Dilution)
+eset<-qFarms(Dilution)  
+INIs <- INIcalls(eset)  # apply I/NI calls
+summary(INIs)   
+I_data <- getI_Eset(INIs) # affybatch containing only  informative probe sets
+I_data 
+@
+
+\begin{figure}[htbp]
+\begin{center}
+<<echo=TRUE,fig=TRUE>>=
+  plot(INIs)  # draws a density plot of I/NI-calls
+@
+\end{center}
+\caption{Histogram of $\mathbf{var(z|x)}$ for the dilution data set, that is provided in affy.}
+\end{figure}
+
+\subsection{Laplacian I/NI call}
+In contrast to the previous section, we will now apply the Laplacian-FARMS to summarize the data. 
+
+
+<<>>=
+eset<-qFarms(Dilution, laplacian=TRUE)  
+INIs <- INIcalls(eset)  # apply I/NI calls
+summary(INIs)   
+I_data <- getI_Eset(INIs) # affybatch containing only  informative probe sets
+I_data 
+@
+
+\begin{figure}[htbp]
+\begin{center}
+<<echo=TRUE,fig=TRUE>>=
+  plot(INIs)  # draws a density plot of I/NI-calls
+@
+\end{center}
+\caption{Histogram of $\mathbf{var(z|x)}$ for the dilution data set, that is provided in affy.}
+\end{figure}
+
+
+Enjoy!
+
+\bibliographystyle{natbib}
+\bibliography{farms}
+\end{document}
