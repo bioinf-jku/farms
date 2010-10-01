@@ -1,6 +1,6 @@
 Package: farms
-Version: 0.99.0
-Date: 2010-07-21
+Version: 1.0.0
+Date: 2010-10-01
 Title: FARMS - Factor Analysis for Robust Microarray Summarization
 Author: Djork-Arne Clevert <okko@clevert.de>
 Maintainer: Djork-Arne Clevert <okko@clevert.de>
