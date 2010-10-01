@@ -3,7 +3,7 @@
 \usepackage{bm}
 \usepackage{natbib}
 \usepackage{url}
-\usepackage{rotating}
+%\usepackage{rotating}
  \usepackage{farms_defs}
  
  \usepackage{hyperref}
