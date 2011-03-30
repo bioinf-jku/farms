@@ -3,7 +3,7 @@
 \title{Generate an expression value from the probes informations}
 \description{Generate an expression from the probe}
 \usage{
-          generateExprVal.method.farms(probes, weight, mu,  cyc, tol, weighted.mean, robust, minNoise, correction, laplacian,  ...)
+          generateExprVal.method.farms(probes, weight, mu,  cyc, tol, weighted.mean, robust, minNoise, correction, laplacian, centering, ...)
           }
 \arguments{
    \item{probes}{a matrix of probe intesities with rows representing
@@ -24,6 +24,7 @@
 	1 (minimal noise (0.0001) is added to the diagonal elements of the covariance matrix to force positive definiteness), 
 	2 (Maximum Likelihood solution to compute the nearest positive definite matrix under the given non-negative correlation constraints of the covariance matrix)}
 	\item{laplacian}{Boolean flag, indicates whether a Laplacian prior for the factor is employed or not. Default value is FALSE.}
+	\item{centering}{Indicates whether the data is "median" or "mean"  centered. Default value is "median".}
  		\item{...}{extra arguments to pass to the respective function}
     }
 

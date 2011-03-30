@@ -49,7 +49,7 @@ upDate.express.summary.stat.methods(c(express.summary.stat.methods(), "farms"))
 
 
 expFarms<-function(object, bgcorrect.method = "none", pmcorrect.method = "pmonly", 
-normalize.method = "quantiles", weight, mu,  weighted.mean, laplacian, robust, correction,...){
+normalize.method = "quantiles", weight, mu,  weighted.mean, laplacian, robust, correction, centering=c("median","mean"), ...){
 	
 	if (missing(weight)){weight <- 0.5}
 	
@@ -63,16 +63,18 @@ normalize.method = "quantiles", weight, mu,  weighted.mean, laplacian, robust, c
 	
 	if (missing(laplacian)){laplacian <- FALSE}
 	
+	centering <- match.arg(centering)
+
     res <- expresso(object, bgcorrect.method=bgcorrect.method, pmcorrect.method=pmcorrect.method, 
 					normalize.method=normalize.method, summary.method = "farms", 
-					summary.param=list(weight=weight, mu=mu,  weighted.mean=weighted.mean, robust=robust, correction=correction, laplacian=laplacian))
+					summary.param=list(weight=weight, mu=mu,  weighted.mean=weighted.mean, robust=robust, correction=correction, laplacian=laplacian, centering=centering))
 	
     return(res)
 	
 } 
 
 
-qFarms<-function (object, weight, mu, weighted.mean, laplacian, robust, correction, ...){
+qFarms<-function (object, weight, mu, weighted.mean, laplacian, robust, correction, centering=c("median","mean"), ...){
 	
 	if (missing(weight)){weight <- 0.5}
 	
@@ -85,16 +87,18 @@ qFarms<-function (object, weight, mu, weighted.mean, laplacian, robust, correcti
 	if (missing(correction)){correction <- 0}
 	
 	if (missing(laplacian)){laplacian <- FALSE}
+	
+	centering <- match.arg(centering)
 	
     res <- expresso(object, bgcorrect.method = "none", pmcorrect.method = "pmonly", 
 					normalize.method = "quantiles", summary.method = "farms", 
-					summary.param=list(weight=weight, mu=mu, weighted.mean=weighted.mean, robust=robust, correction=correction, laplacian=laplacian))
+					summary.param=list(weight=weight, mu=mu, weighted.mean=weighted.mean, robust=robust, correction=correction, laplacian=laplacian, centering=centering))
 	
     return(res)
 	
 }
 
-lFarms<-function (object, weight, mu, weighted.mean, laplacian, robust, correction,...){
+lFarms<-function (object, weight, mu, weighted.mean, laplacian, robust, correction, centering=c("median","mean"),...){
 	
 	if (missing(weight)){weight <- 0.5}
 	
@@ -108,16 +112,18 @@ lFarms<-function (object, weight, mu, weighted.mean, laplacian, robust, correcti
 	
 	if (missing(laplacian)){laplacian <- FALSE}
 	
+	centering <- match.arg(centering)
+	
     res <- expresso(object, bgcorrect.method = "none", pmcorrect.method = "pmonly", 
 					normalize.method = "loess", summary.method = "farms", 
-					summary.param=list(weight=weight, mu=mu, weighted.mean=weighted.mean, robust=robust, correction=correction, laplacian=laplacian))
+					summary.param=list(weight=weight, mu=mu, weighted.mean=weighted.mean, robust=robust, correction=correction, laplacian=laplacian, centering=centering))
 	
     return(res)
 	
 }
 
 
-generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted.mean, robust=FALSE, minNoise, correction, laplacian, ...){
+generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted.mean, robust=FALSE, minNoise, correction, laplacian, centering=c("median","mean"), ...){
 	
 	if (missing(weight)){weight <- 0.5}	
 	
@@ -136,6 +142,8 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 	if (missing(laplacian)){laplacian <- FALSE}
 	
 	if (missing(minNoise)){minNoise <- 0.0001}
+	
+	centering <- match.arg(centering)
 	
 	
 ## probes - data matrix
@@ -172,7 +180,11 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 
 	probes <- log2(probes)## log2-transform probe intensities
 	
-	mean.probes <- rowMeans(probes)  ## calculate mean of probes
+	
+	if (centering=="median") {mean.probes <- apply(probes, 1, median)}
+		
+	if (centering=="mean") {mean.probes <- rowMeans(probes)}  ## calculate mean of probes
+	
 	
 	centered.probes <- probes - mean.probes
 	
@@ -188,8 +200,9 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 		
 		x <- t(probes)
 		
-		y_v <- colMeans(x)
+		if (centering=="median") {y_v <- apply(x, 2, median)}
 		
+		if (centering=="mean") {y_v <- colMeans(x)}
 
 		xmean <- matrix(y_v, n_array, n_probes, byrow = TRUE)
 		
@@ -207,7 +220,9 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 		
 		x <- t(probes)
 		
-		y_v <- colMeans(x)
+		if (centering=="median") {y_v <- apply(x, 2, median)}
+		
+		if (centering=="mean") {y_v <- colMeans(x)}
 
 		xmean <- matrix(y_v, n_array, n_probes, byrow = TRUE)
 		

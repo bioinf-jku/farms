@@ -9,7 +9,7 @@
   and uses the function \code{\link[affy]{normalize.quantiles}} for array normalization.
 }
 \usage{
-          qFarms(object, weight, mu,  weighted.mean, laplacian, robust, correction, ...)
+          qFarms(object, weight, mu,  weighted.mean, laplacian, robust, correction, centering, ...)
           }
 \arguments{
    \item{object}{An instance of \code{\link[affy:AffyBatch-class]{AffyBatch}}.}
@@ -24,6 +24,7 @@
 	which might emerge from the non-negative correlation constraints or not. Default = O  (means that no correction is done), 
 	1 (minimal noise (0.0001) is added to the diagonal elements of the covariance matrix to force positive definiteness), 
 	2 (Maximum Likelihood solution to compute the nearest positive definite matrix under the given non-negative correlation constraints of the covariance matrix)}
+	\item{centering}{Indicates whether the data is "median" or "mean"  centered. Default value is "median".}
 	\item{...}{other arguments to be passed to \code{\link[affy]{expresso}}.}
           }
 
