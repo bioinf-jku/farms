@@ -57,7 +57,7 @@ normalize.method = "quantiles", weight, mu,  weighted.mean, laplacian, robust, c
 	
 	if (missing(robust)){robust <- TRUE}
 	
-	if (missing(weighted.mean)){weighted.mean <- TRUE}
+	if (missing(weighted.mean)){weighted.mean <- FALSE}
 	
 	if (missing(correction)){correction <- 0}
 	
@@ -82,7 +82,7 @@ qFarms<-function (object, weight, mu, weighted.mean, laplacian, robust, correcti
 	
 	if (missing(robust)){robust <- TRUE}
 	
-	if (missing(weighted.mean)){weighted.mean <- TRUE}
+	if (missing(weighted.mean)){weighted.mean <- FALSE}
 	
 	if (missing(correction)){correction <- 0}
 	
@@ -106,7 +106,7 @@ lFarms<-function (object, weight, mu, weighted.mean, laplacian, robust, correcti
 	
 	if (missing(robust)){robust <- TRUE}
 	
-	if (missing(weighted.mean)){weighted.mean <- TRUE}
+	if (missing(weighted.mean)){weighted.mean <- FALSE}
 	
 	if (missing(correction)){correction <- 0}
 	
@@ -123,7 +123,7 @@ lFarms<-function (object, weight, mu, weighted.mean, laplacian, robust, correcti
 }
 
 
-generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted.mean, robust=FALSE, minNoise, correction, laplacian, centering=c("median","mean"), ...){
+generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted.mean, robust, minNoise, correction, laplacian, centering=c("median","mean"), ...){
 	
 	if (missing(weight)){weight <- 0.5}	
 	
@@ -133,9 +133,9 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 	
 	if (missing(robust)){robust <- TRUE}
 	
-	if (missing(cyc)){cyc <- 25}
+	if (missing(cyc)){cyc <- 30}
 	
-	if (missing(weighted.mean)){weighted.mean <- TRUE}
+	if (missing(weighted.mean)){weighted.mean <- FALSE}
 	
 	if (missing(correction)){correction <- 0}
 	
@@ -146,53 +146,56 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 	centering <- match.arg(centering)
 	
 	
-## probes - data matrix
-## weight - hyperparameter default (0.5)
-## mu - hyperparameter default (0)
-## scale - scaling parameter for quantiles- (1.5) and 
-## loess-normalization (2)
-## tol - termination tolerance (default = 0.00001)
-## cyc - maximum number of cycles of EM (default 100)
-## L - factor loadings
-## Ph - diagonal uniqueness matrix
+	## probes - data matrix
+	## weight - hyperparameter default (0.5)
+	## mu - hyperparameter default (0)
+	## scale - scaling parameter for quantiles- (1.5) and 
+	## loess-normalization (2)
+	## tol - termination tolerance (default = 0.00001)
+	## cyc - maximum number of cycles of EM (default 100)
+	## L - factor loadings
+	## Ph - diagonal uniqueness matrix
 	
-	a_old <- 0.5
+	a_old <- 1/0.5
 	n_array <-  ncol(probes)
 	n_probes <- nrow(probes)
+	epsmin <- 1e-30
 	
-
-		
+	
+	
 	if(n_array < 2){
-			
+		
 		stop("Error: FARMS is a multi-array method and therefore not designed for single-array summarization!")
 		
 	}
-		
-	if(n_array < 4){
-			
-		message("Warning: FARMS is a multi-array method, therefore it is not recommended to apply FARMS for batch sizes smaller than 4 arrays!")
-			
-	}
-		
-		
-
 	
-
+	if(n_array < 4){
+		
+		message("Warning: FARMS is a multi-array method, therefore it is not recommended to apply FARMS for batch sizes smaller than 4 arrays!")
+		
+	}
+	
+	
+	
+	
+	
 	probes <- log2(probes)## log2-transform probe intensities
 	
 	
-	if (centering=="median") {mean.probes <- apply(probes, 1, median)}
-		
+	if (centering=="median") {mean.probes <- rowMedians(probes)}
+	
 	if (centering=="mean") {mean.probes <- rowMeans(probes)}  ## calculate mean of probes
 	
 	
 	centered.probes <- probes - mean.probes
 	
+	
+	
 	sd.probes <- sqrt(diag(crossprod(t(centered.probes))) / n_array) ## calculate sd of probes
 	
 	if(0 %in% sd.probes){
 		
-		index <- which(sd.probes == 0)
+		index <- which(sd.probes < epsmin)
 		
 		sd.probes[index] <- 1	## avoiding division by zero
 		
@@ -200,10 +203,10 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 		
 		x <- t(probes)
 		
-		if (centering=="median") {y_v <- apply(x, 2, median)}
+		if (centering=="median") {y_v <- rowMedians(probes)}
 		
-		if (centering=="mean") {y_v <- colMeans(x)}
-
+		if (centering=="mean") {y_v <- rowMeans(probes)}
+		
 		xmean <- matrix(y_v, n_array, n_probes, byrow = TRUE)
 		
 		X <- x - xmean  ## center data (0 mean)
@@ -220,10 +223,10 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 		
 		x <- t(probes)
 		
-		if (centering=="median") {y_v <- apply(x, 2, median)}
+		if (centering=="median") {y_v <- rowMedians(probes)}
 		
-		if (centering=="mean") {y_v <- colMeans(x)}
-
+		if (centering=="mean") {y_v <- rowMeans(probes)}
+		
 		xmean <- matrix(y_v, n_array, n_probes, byrow = TRUE)
 		
 		X <- x - xmean  ## center data (0 mean)
@@ -242,7 +245,7 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 		
 		while(minEigenValues < 0){
 			
-    		eigen_XX <- eigen(XX)
+			eigen_XX <- eigen(XX)
 			
 			eigenValues_XX <- eigen_XX$values
 			
@@ -250,7 +253,7 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 			
 			minEigenValues <- min(eigenValues_XX)
 			
-    		if(correction<2){
+			if(correction<2){
 				
 				if(minEigenValues<minNoise){
 					
@@ -260,7 +263,7 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 				
 			}
 			
-    		else{
+			else{
 				
 				if(minEigenValues<minNoise){
 					
@@ -282,7 +285,9 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 	
 	Ph <- diagXX - L^2
 	
-    alpha <- weight * n_probes
+	Ph[which(Ph < epsmin)] <- epsmin
+	
+	alpha <- weight * n_probes
 	
 	bbeta <- mu * alpha
 	
@@ -303,23 +308,17 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 		
 		for (i in 1:cyc){
 			
-## E Step
+			## E Step
 			
 			PsiL <- (1/Ph)*L
 			
-			L_robust <- L
-			
-			Ph_robust <- Ph
-			
 			a <- 1/as.vector(as.vector(lapla)+crossprod(L,PsiL))
-			
-			
 			
 			mu_ZX <- X%*%PsiL*a
 			
 			EZZ <- mu_ZX^2+a
 			
-## M Step
+			## M Step
 			
 			sumXMU <- 1/n_array*crossprod(X,mu_ZX)
 			
@@ -329,9 +328,12 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 			
 			Ph <- diagXX-L*sumXMU+Ph*alpha*L*(mu-L)
 			
+			Ph[which(Ph < epsmin)] <- epsmin
+			
 			lapla <- 1/(mu_ZX^2 + a)^0.5
 			
-			if (sqrt(sum(a_old - a)^2) < tol){
+			
+			if (sqrt(sum((a_old - a)^2)) < tol){
 				
 				break
 				
@@ -361,18 +363,6 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 			
 			a <- as.vector(1 + crossprod(L, PsiL))
 			
-			L_robust <- L
-			
-			Ph_robust <- Ph
-			
-			if((1/a < 0.999) && robust){
-				
-				L_robust <- L
-				
-				Ph_robust <- Ph
-				
-			}
-			
 			bar <- PsiL / a
 			
 			beta <- t(bar)
@@ -385,23 +375,23 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 			
 			t_EZZ <- as.vector(EZZ) + Ph * alpha
 			
-## M Step
+			## M Step
 			
 			L <- t_XXbeta / t_EZZ
 			
 			Ph <- diagXX - XXbeta * L + Ph * alpha * L * (mu - L) 
 			
-			if (sqrt(sum(1/a_old - 1/a)^2) < tol){
+			Ph[which(Ph < epsmin)] <- epsmin
+			
+			if (sqrt((1/a_old - 1/a)^2) < tol){
 				
 				break
 				
 			}
 			
-			a_old <- 1/a
+			a_old <- a
 			
 		}
-		
-		
 		
 		c <- X %*% bar ## hidden variable c - factor
 		
@@ -409,7 +399,7 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 	
 	if (!laplacian){
 		
-		if(EZZ == 0){
+		if(EZZ < epsmin){
 			
 			var_z_scale <- 1 ## avoiding division by zero
 		}
@@ -422,9 +412,9 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 	
 	else{
 		
-		var_scale <- sd(c)*(1-1/n_array)
+		var_scale <- sd(as.vector(c))*(1-1/n_array)
 		
-		if(var_scale == 0){
+		if(var_scale < epsmin){
 			
 			var_z_scale <- 1 ## avoiding division by zero
 		}
@@ -447,68 +437,9 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 	
 	SNR <- 1 / a ## INI-Call
 	
-##	SIG <- as.vector(crossprod(L, diag(as.vector(1/Ph)))) %*% XX %*% diag(as.vector(1/Ph)) %*% L * a^-2 ## SIGNAL-Call
-	
+	##	SIG <- as.vector(crossprod(L, diag(as.vector(1/Ph)))) %*% XX %*% diag(as.vector(1/Ph)) %*% L * a^-2 ## SIGNAL-Call
 	
 	signal_info <- numeric(length=n_array)
-##	if (n_array >= 4){
-##		signal_info[1] <- SNR
-##		signal_info[2] <- SIG
-##		signal_info[3] <- SIG * a^2
-##		signal_info[4] <- i
-##	}
-##	if (n_array == 3){
-##		signal_info[1] <- SNR
-##		signal_info[2] <- SIG
-##		signal_info[3] <- SIG * a^2
-##	}
-##	if (n_array == 2){
-##		signal_info[1] <- SNR
-##		signal_info[2] <- SIG
-##	}
-##	if (n_array == 1){
-##		signal_info[1] <- SNR
-##}
-	
-	
-	if(robust && (SNR >= 0.999)){
-		
-		L <- L_robust
-		
-		Ph <- Ph_robust
-		
-		PsiL <- (1 / Ph) * L
-		
-		a <- as.vector(1 + crossprod(L, PsiL))
-		
-		bar <- PsiL / a
-		
-		beta <- t(bar)
-		
-		XXbeta <- XX %*% bar
-		
-		EZZ <- 1 - beta %*% L + beta %*% XXbeta
-		
-		c <- X %*% bar ## hidden variable c - factor
-		
-		if(EZZ == 0){
-			
-			var_z_scale <- 1 ## avoiding division by zero
-			
-		}
-		
-		else{
-			
-			var_z_scale <- sqrt(EZZ)
-			
-		}
-		
-		c <- c / as.vector(var_z_scale)
-		
-		L <- L * as.vector(var_z_scale)
-		
-	}
-	
 	
 	
 	if (weighted.mean){
@@ -519,7 +450,7 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 		
 		propPsiLL <- PsiLL / sumPsiLL
 		
-		express <- as.vector(crossprod(L * sd.probes, propPsiLL)) * c + mean(y_v * sd.probes)
+		express <- as.vector(crossprod(L * sd.probes, propPsiLL)) * c + median(y_v * sd.probes)
 		
 	} 
 	
@@ -527,7 +458,7 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 	
 	{
 		
-		express <- median(L * sd.probes) * c + mean(y_v * sd.probes)
+		express <- median(L * sd.probes) * c + median(y_v * sd.probes)
 		
 	}
 	
@@ -542,6 +473,24 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 	else{
 		
 		signal_info[] <- SNR
+		
+	}
+	
+	if(robust && (sd(as.vector(express)) < 1e-5)){
+		
+		rowMedianX <- rowMedians(x)
+		
+		x <- x - rowMedianX
+		
+		x[which(x <= 0)] <- NA
+		
+		rowMeansX <- rowMeans(x,  na.rm = TRUE)
+		
+		rowMeansXCentered <-  rowMeansX - mean(rowMeansX)
+		
+		minVarExpress <- rowMeansXCentered / (sqrt(mean(rowMeansXCentered^2))+epsmin) * 1e-5
+		
+		express <- median(y_v * sd.probes) + minVarExpress
 		
 	}
 	

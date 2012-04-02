@@ -21,7 +21,7 @@
 \seealso{\code{\link{expFarms}}, \code{\link{qFarms}},\code{\link{lFarms}},\code{\link{INIcalls}},\code{\link{summary}}}
 \examples{
 data(testAffyBatch)
-eset <- expFarms(testAffyBatch, bgcorrect.method = "rma", pmcorrect.method = "pmonly", normalize.method = "constant") 
+eset <- expFarms(testAffyBatch, bgcorrect.method = "none", pmcorrect.method = "pmonly", normalize.method = "constant") 
 INIs <- INIcalls(eset)  # apply I/NI calls
 summary(INIs)
 plot(INIs) # draws a density plot of I/NI-calls

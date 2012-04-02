@@ -17,7 +17,7 @@
 	\item{mu}{Hyperparameter value which allows to quantify different aspects of 
 	potential prior knowledge. Values near zero assumes that most genes do not
 	contain a signal, and introduces a bias for loading matrix elements near zero. Default value is 0}
- 	\item{weighted.mean}{Boolean flag, that indicates wether a weighted mean or a least square fit is used to summarize the loading matrix. The default value is set to TRUE.}
+ 	\item{weighted.mean}{Boolean flag, that indicates whether a weighted mean or a least square fit is used to summarize the loading matrix. The default value is set to FALSE.}
  	 \item{laplacian}{Boolean flag, indicates whether a Laplacian prior for the factor is employed or not. Default value is FALSE.}
  	\item{robust}{Boolean flag, that ensures non-constant results. Default value is TRUE.}
  	\item{correction}{Value that indicates whether the covariance matrix should be corrected for negative eigenvalues 
@@ -35,6 +35,6 @@
 \examples{
 
 data(testAffyBatch)
-eset <- qFarms(testAffyBatch,  weight=0.5, weighted.mean=TRUE)
+eset <- qFarms(testAffyBatch)
 }
 \keyword{manip}

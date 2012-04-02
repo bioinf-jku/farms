@@ -14,9 +14,9 @@
 	\item{mu}{Hyperparameter value  which allows to quantify different aspects of 
 	potential prior knowledge. A value near zero assumes that most genes do not
 	contain a signal, and introduces a bias for loading matrix elements near zero. Default value is 0}
- 	\item{cyc}{Value which determinates the maximum numbers of EM-Steps. Default value is set to number of arrays/2}
+ 	\item{cyc}{Value which determinates the maximum numbers of EM-Steps. Default value is set to 30}
 	\item{tol}{Value which determinates the termination tolerance. Convergence threshold is set to 1E-05.}
-	\item{weighted.mean}{Boolean flag, that indicates wether a weighted mean or a least square fit is used to summarize the loading matrix. The default value is set to TRUE .}
+	\item{weighted.mean}{Boolean flag, that indicates whether a weighted mean or a least square fit is used to summarize the loading matrix. The default value is set to FALSE .}
  	\item{robust}{Boolean flag, that ensures non-constant results. Default value is TRUE.}
  	\item{minNoise}{Value, minimal noise assumption. Default value is 0.0001.}
  	 	\item{correction}{Value that indicates whether the covariance matrix should be corrected for negative eigenvalues 
