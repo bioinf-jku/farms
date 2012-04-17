@@ -48,8 +48,9 @@ upDate.express.summary.stat.methods(c(express.summary.stat.methods(), "farms"))
 
 
 
+
 expFarms<-function(object, bgcorrect.method = "none", pmcorrect.method = "pmonly", 
-normalize.method = "quantiles", weight, mu,  weighted.mean, laplacian, robust, correction, centering=c("median","mean"), ...){
+		normalize.method = "quantiles", weight, mu,  weighted.mean, laplacian, robust, correction, centering=c("median","mean"), spuriousCorrelation, ...){
 	
 	if (missing(weight)){weight <- 0.5}
 	
@@ -63,18 +64,20 @@ normalize.method = "quantiles", weight, mu,  weighted.mean, laplacian, robust, c
 	
 	if (missing(laplacian)){laplacian <- FALSE}
 	
-	centering <- match.arg(centering)
-
-    res <- expresso(object, bgcorrect.method=bgcorrect.method, pmcorrect.method=pmcorrect.method, 
-					normalize.method=normalize.method, summary.method = "farms", 
-					summary.param=list(weight=weight, mu=mu,  weighted.mean=weighted.mean, robust=robust, correction=correction, laplacian=laplacian, centering=centering))
+	if (missing(spuriousCorrelation)){spuriousCorrelation <- 0}
 	
-    return(res)
+	centering <- match.arg(centering)
+	
+	res <- expresso(object, bgcorrect.method=bgcorrect.method, pmcorrect.method=pmcorrect.method, 
+			normalize.method=normalize.method, summary.method = "farms", 
+			summary.param=list(weight=weight, mu=mu,  weighted.mean=weighted.mean, robust=robust, correction=correction, laplacian=laplacian, centering=centering, spuriousCorrelation=spuriousCorrelation))
+	
+	return(res)
 	
 } 
 
 
-qFarms<-function (object, weight, mu, weighted.mean, laplacian, robust, correction, centering=c("median","mean"), ...){
+qFarms<-function (object, weight, mu, weighted.mean, laplacian, robust, correction, centering=c("median","mean"), spuriousCorrelation,...){
 	
 	if (missing(weight)){weight <- 0.5}
 	
@@ -88,17 +91,19 @@ qFarms<-function (object, weight, mu, weighted.mean, laplacian, robust, correcti
 	
 	if (missing(laplacian)){laplacian <- FALSE}
 	
+	if (missing(spuriousCorrelation)){spuriousCorrelation <- 0}
+	
 	centering <- match.arg(centering)
 	
-    res <- expresso(object, bgcorrect.method = "none", pmcorrect.method = "pmonly", 
-					normalize.method = "quantiles", summary.method = "farms", 
-					summary.param=list(weight=weight, mu=mu, weighted.mean=weighted.mean, robust=robust, correction=correction, laplacian=laplacian, centering=centering))
+	res <- expresso(object, bgcorrect.method = "none", pmcorrect.method = "pmonly", 
+			normalize.method = "quantiles", summary.method = "farms", 
+			summary.param=list(weight=weight, mu=mu, weighted.mean=weighted.mean, robust=robust, correction=correction, laplacian=laplacian, centering=centering, spuriousCorrelation=spuriousCorrelation))
 	
-    return(res)
+	return(res)
 	
 }
 
-lFarms<-function (object, weight, mu, weighted.mean, laplacian, robust, correction, centering=c("median","mean"),...){
+lFarms<-function (object, weight, mu, weighted.mean, laplacian, robust, correction, centering=c("median","mean"), spuriousCorrelation, ...){
 	
 	if (missing(weight)){weight <- 0.5}
 	
@@ -112,18 +117,20 @@ lFarms<-function (object, weight, mu, weighted.mean, laplacian, robust, correcti
 	
 	if (missing(laplacian)){laplacian <- FALSE}
 	
+	if (missing(spuriousCorrelation)){spuriousCorrelation <- 0}
+	
 	centering <- match.arg(centering)
 	
-    res <- expresso(object, bgcorrect.method = "none", pmcorrect.method = "pmonly", 
-					normalize.method = "loess", summary.method = "farms", 
-					summary.param=list(weight=weight, mu=mu, weighted.mean=weighted.mean, robust=robust, correction=correction, laplacian=laplacian, centering=centering))
+	res <- expresso(object, bgcorrect.method = "none", pmcorrect.method = "pmonly", 
+			normalize.method = "loess", summary.method = "farms", 
+			summary.param=list(weight=weight, mu=mu, weighted.mean=weighted.mean, robust=robust, correction=correction, laplacian=laplacian, centering=centering, spuriousCorrelation=spuriousCorrelation))
 	
-    return(res)
+	return(res)
 	
 }
 
 
-generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted.mean, robust, minNoise, correction, laplacian, centering=c("median","mean"), ...){
+generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted.mean, robust, minNoise, correction, laplacian, centering=c("median","mean"),spuriousCorrelation, ...){
 	
 	if (missing(weight)){weight <- 0.5}	
 	
@@ -143,6 +150,8 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 	
 	if (missing(minNoise)){minNoise <- 0.0001}
 	
+	if (missing(spuriousCorrelation)){spuriousCorrelation <- 0}
+	
 	centering <- match.arg(centering)
 	
 	
@@ -154,7 +163,7 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 	## tol - termination tolerance (default = 0.00001)
 	## cyc - maximum number of cycles of EM (default 100)
 	## L - factor loadings
-	## Ph - diagonal uniqueness matrix
+	## Psi - diagonal uniqueness noise matrix 
 	
 	a_old <- 1/0.5
 	n_array <-  ncol(probes)
@@ -283,18 +292,20 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 	
 	L <- sqrt(0.75 * diagXX) ## initialize factor loadings 
 	
-	Ph <- diagXX - L^2
+	Psi <- diagXX - L^2
 	
-	Ph[which(Ph < epsmin)] <- epsmin
+	Psi[which(Psi < epsmin)] <- epsmin
 	
 	alpha <- weight * n_probes
 	
 	bbeta <- mu * alpha
 	
 	
+	PsiOld <- Psi
+	
 	if(laplacian){    ## Variational approach if Laplacian prior was selected
 		
-		PsiL <- (1/Ph)*L
+		PsiL <- (1/Psi)*L
 		
 		a <- as.vector(1+crossprod(L,PsiL))
 		
@@ -310,7 +321,7 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 			
 			## E Step
 			
-			PsiL <- (1/Ph)*L
+			PsiL <- (1/Psi)*L
 			
 			a <- 1/as.vector(as.vector(lapla)+crossprod(L,PsiL))
 			
@@ -322,24 +333,37 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 			
 			sumXMU <- 1/n_array*crossprod(X,mu_ZX)
 			
-			L <- (sumXMU +Ph*bbeta)/(mean(EZZ)+Ph*alpha)
+			L <- (sumXMU +Psi*bbeta)/(mean(EZZ)+Psi*alpha)
 			
-			L[which(L<0)] <- 0
+			L[which(L<0)] <- epsmin
 			
-			Ph <- diagXX-L*sumXMU+Ph*alpha*L*(mu-L)
+			Psi <- diagXX-L*sumXMU+Psi*alpha*L*(mu-L)
 			
-			Ph[which(Ph < epsmin)] <- epsmin
+			Psi[which(Psi < epsmin)] <- epsmin
 			
-			lapla <- 1/(mu_ZX^2 + a)^0.5
+			lapla <- 1/sqrt(mu_ZX^2 + a)
 			
+			if (spuriousCorrelation != 0) { 
+				
+				lapla[which(lapla < spuriousCorrelation)] <- spuriousCorrelation
+				
+			}
 			
-			if (sqrt(sum((a_old - a)^2)) < tol){
+			if(max(abs(Psi - PsiOld)) / max(abs(PsiOld)) < tol) {
 				
 				break
 				
 			}
 			
-			a_old <- a
+			PsiOld <- Psi
+			
+			#if (sqrt(sum((a_old - a)^2)) < tol){
+			
+			#	break
+			
+			#}
+			
+			#a_old <- a
 			
 		}
 		
@@ -359,7 +383,7 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 			
 # E Step
 			
-			PsiL <- (1 / Ph) * L
+			PsiL <- (1 / Psi) * L
 			
 			a <- as.vector(1 + crossprod(L, PsiL))
 			
@@ -371,25 +395,34 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 			
 			EZZ <- 1 - beta %*% L + beta %*% XXbeta
 			
-			t_XXbeta <- XXbeta + Ph * bbeta
+			t_XXbeta <- XXbeta + Psi * bbeta
 			
-			t_EZZ <- as.vector(EZZ) + Ph * alpha
+			t_EZZ <- as.vector(EZZ) + Psi * alpha
 			
 			## M Step
 			
 			L <- t_XXbeta / t_EZZ
 			
-			Ph <- diagXX - XXbeta * L + Ph * alpha * L * (mu - L) 
+			Psi <- diagXX - XXbeta * L + Psi * alpha * L * (mu - L) 
 			
-			Ph[which(Ph < epsmin)] <- epsmin
+			Psi[which(Psi < epsmin)] <- epsmin
 			
-			if (sqrt((1/a_old - 1/a)^2) < tol){
+			if(max(abs(Psi - PsiOld)) / max(abs(PsiOld)) < tol) {
 				
 				break
 				
 			}
 			
-			a_old <- a
+			PsiOld <- Psi
+			
+			
+			#if (sqrt((1/a_old - 1/a)^2) < tol){
+			
+			#	break
+			
+			#}
+			
+			#a_old <- a
 			
 		}
 		
@@ -431,20 +464,20 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 	
 	L <- L * as.vector(var_z_scale)
 	
-	PsiL <- (1 / Ph) * L
+	PsiL <- (1 / Psi) * L
 	
 	a <- as.vector(1 + crossprod(L,PsiL))
 	
 	SNR <- 1 / a ## INI-Call
 	
-	##	SIG <- as.vector(crossprod(L, diag(as.vector(1/Ph)))) %*% XX %*% diag(as.vector(1/Ph)) %*% L * a^-2 ## SIGNAL-Call
+	##	SIG <- as.vector(crossprod(L, diag(as.vector(1/Psi)))) %*% XX %*% diag(as.vector(1/Psi)) %*% L * a^-2 ## SIGNAL-Call
 	
 	signal_info <- numeric(length=n_array)
 	
 	
 	if (weighted.mean){
 		
-		PsiLL <- ((1 / Ph) * L^2)
+		PsiLL <- ((1 / Psi) * L^2)
 		
 		sumPsiLL <- sum(PsiLL)
 		
@@ -496,7 +529,6 @@ generateExprVal.method.farms <- function(probes, weight, mu,  cyc, tol, weighted
 	
 	return(list(exprs=as.numeric(express),se.exprs=as.numeric(signal_info)))
 }
-
 
 
 

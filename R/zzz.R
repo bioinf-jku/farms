@@ -50,7 +50,8 @@
 						  "               Updated I/NI-Call for Laplace-FARMS version,","\n",
 						  "               Maximum likelihood correlation structure given","\n",
 						  "               non-negative constraints", "\n",
-						  "Version 1.4.0: Default centering changed to median","\n")
+						  "Version 1.4.0: Default centering changed to median","\n",
+						  "Version 1.8.x: Suppression of spurious correlation (Laplace-FARMS)","\n")
 	
 	upDate.generateExprSet.methods(c(generateExprSet.methods(), "farms"))
 	upDate.express.summary.stat.methods(c(express.summary.stat.methods(), "farms"))

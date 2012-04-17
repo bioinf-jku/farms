@@ -9,7 +9,7 @@
   and uses the function \code{\link[affy]{normalize.quantiles}} for array normalization.
 }
 \usage{
-          qFarms(object, weight, mu,  weighted.mean, laplacian, robust, correction, centering, ...)
+          qFarms(object, weight, mu,  weighted.mean, laplacian, robust, correction, centering, spuriousCorrelation, ...)
           }
 \arguments{
    \item{object}{An instance of \code{\link[affy:AffyBatch-class]{AffyBatch}}.}
@@ -25,6 +25,8 @@
 	1 (minimal noise (0.0001) is added to the diagonal elements of the covariance matrix to force positive definiteness), 
 	2 (Maximum Likelihood solution to compute the nearest positive definite matrix under the given non-negative correlation constraints of the covariance matrix)}
 	\item{centering}{Indicates whether the data is "median" or "mean"  centered. Default value is "median".}
+	\item{spuriousCorrelation}{Numeric value in the range of [0,1] that quantifies the suppression of spurious correlation when using the Laplacian prior. 
+	Default value is 0 (no suppression). Note, that this parameter is only active when the laplacian parameter is set to TRUE.}
 	\item{...}{other arguments to be passed to \code{\link[affy]{expresso}}.}
           }
 

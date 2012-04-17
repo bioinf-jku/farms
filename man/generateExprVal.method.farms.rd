@@ -3,7 +3,7 @@
 \title{Generate an expression value from the probes informations}
 \description{Generate an expression from the probe}
 \usage{
-          generateExprVal.method.farms(probes, weight, mu,  cyc, tol, weighted.mean, robust, minNoise, correction, laplacian, centering, ...)
+          generateExprVal.method.farms(probes, weight, mu,  cyc, tol, weighted.mean, robust, minNoise, correction, laplacian, centering, spuriousCorrelation, ...)
           }
 \arguments{
    \item{probes}{a matrix of probe intesities with rows representing
@@ -16,7 +16,7 @@
 	contain a signal, and introduces a bias for loading matrix elements near zero. Default value is 0}
  	\item{cyc}{Value which determinates the maximum numbers of EM-Steps. Default value is set to 30}
 	\item{tol}{Value which determinates the termination tolerance. Convergence threshold is set to 1E-05.}
-	\item{weighted.mean}{Boolean flag, that indicates whether a weighted mean or a least square fit is used to summarize the loading matrix. The default value is set to FALSE .}
+	\item{weighted.mean}{Boolean flag, that indicates whether a weighted mean or a least square fit is used to summarize the loading matrix. The default value is set to FALSE.}
  	\item{robust}{Boolean flag, that ensures non-constant results. Default value is TRUE.}
  	\item{minNoise}{Value, minimal noise assumption. Default value is 0.0001.}
  	 	\item{correction}{Value that indicates whether the covariance matrix should be corrected for negative eigenvalues 
@@ -25,6 +25,8 @@
 	2 (Maximum Likelihood solution to compute the nearest positive definite matrix under the given non-negative correlation constraints of the covariance matrix)}
 	\item{laplacian}{Boolean flag, indicates whether a Laplacian prior for the factor is employed or not. Default value is FALSE.}
 	\item{centering}{Indicates whether the data is "median" or "mean"  centered. Default value is "median".}
+	\item{spuriousCorrelation}{Numeric value in the range of [0,1] that quantifies the suppression of spurious correlation when using the Laplacian prior. 
+	Default value is 0 (no suppression). Note, that this parameter is only active when the laplacian parameter is set to TRUE.}
  		\item{...}{extra arguments to pass to the respective function}
     }
 
